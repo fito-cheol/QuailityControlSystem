@@ -26,6 +26,7 @@ class Application(Frame):
 
     def create_widgets(self):
 
+        # 시작 정지
         img = PhotoImage(file="image/play.jpg")
         self.play = Button(self, command=self.process_data, image=img)
         self.play.image = img
@@ -36,8 +37,17 @@ class Application(Frame):
         self.stop.image = img
         self.stop.grid(row=0, column=1, rowspan=2)
 
-        self.text_diplay = scrolledtext.ScrolledText(self, width=120, height=10)
-        self.text_diplay.grid(row=7, column=4,  columnspan=10)
+        # 로그관련
+        self.text_display = scrolledtext.ScrolledText(self, width=120, height=10)
+        self.text_display.grid(row=8, column=4, columnspan=10)
+
+        self.clear_text_display_button = Button(self, text="CLEAR LOGS", command=self.clear_text_display)
+        self.clear_text_display_button.grid(row=7, column=4)
+
+        self.save_text_display_button = Button(self, text="SAVE LOGS", command=self.save_text_display)
+        self.save_text_display_button.grid(row=7, column=5)
+
+        # 셀 배치 6 X 6
 
         # 셀모양을 배치할 예정 6 X 6
         for i in range(6):
@@ -49,8 +59,13 @@ class Application(Frame):
                 cell_object = Cell(tmp_widget)
                 self.cell_object_list.append(cell_object)
 
-    def say_hi(self):
-        self.save_log("hi there, everyone!")
+    def save_text_display(self):
+        print(self.text_display.get(1.0, END))
+        pass
+
+    def clear_text_display(self):
+        self.text_display.delete(1.0, END)
+        pass
 
     def process_data(self):
         """
@@ -92,9 +107,9 @@ class Application(Frame):
         dt_now = datetime.datetime.now()
         # string_now = dt_now.strftime("%H 시 %M 분 %S 초") # 한글 입력 안됨
         string_now = dt_now.strftime("%H:%M:%S ")
-        log = string_now + "||\t" + log_string
+        log = string_now + "||\t" + log_string + "\n"
         self.log_to_show.append(log)
-        self.text_diplay.insert(INSERT, log)
+        self.text_display.insert(INSERT, log)
         print(string_now + log_string)
 
     def show_MessageBox(self, message):
@@ -159,7 +174,10 @@ class Cell:
 
     def update_widget(self):
         # 위젯의 글자와 색을 바꿔준다
-        self.widget["text"] = str(self.serial_number) + " - " + self.status
+        if self.serial_number:
+            self.widget["text"] = "CLBX-" + str(self.serial_number) + "\n" + self.status
+        else:
+            self.widget["text"] = "\n" + self.status
 
         if self.status == 'WAITING':
             self.widget["bg"] = 'white'
@@ -167,7 +185,6 @@ class Cell:
             self.widget["bg"] = 'blue'
         else:
             self.widget["bg"] = 'red'
-
 
 
 if __name__ == '__main__':
