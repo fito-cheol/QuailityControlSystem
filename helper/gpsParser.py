@@ -84,13 +84,9 @@ class NmeaGsvMessage:
                 channel = splited_line[0].replace('$','')
                 satelite_num = int(splited_line[i-3])
                 snr_num = int(splited_line[i])
-                # print("input", (channel, satelite_num, snr_num))
                 if satelite_num in self.accepted_satelite[channel]:
-                    # print("accep", (channel, satelite_num, snr_num))
                     satelite_buffer = Satelite(channel, satelite_num, snr_num)
                     self.satelite_buffer_list.append(satelite_buffer)
-                # satelite_buffer = Satelite(channel, satelite_num, snr_num)
-                # self.satelite_buffer_list.append(satelite_buffer)
             except:
                 continue
 
@@ -115,6 +111,16 @@ class NmeaGsvMessage:
 
     def show_result(self):
         self.prepare_result()
+        """
+        {'GPGSV': {
+        1: {'snr_sum': 56577, 'line_num': 1195}, 
+        3: {'snr_sum': 62054, 'line_num': 1195}, 
+        22: {'snr_sum': 55965, 'line_num': 1195}, 
+        50: {'snr_sum': 52859, 'line_num': 1195}}, 
+        'GLGSV': {
+        71: {'snr_sum': 56978, 'line_num': 1194}, 
+        86: {'snr_sum': 57908, 'line_num': 1194}}}
+        """
         print(self.result)
         return self.result
 

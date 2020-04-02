@@ -95,20 +95,20 @@ class Application(Frame):
         # 각 셀을 순회하면서 process하라고 명령어 날리기
         for cell in self.cell_object_list:
             result = cell.process()
-            # if result:
-            #     self.save_log(str(cell.serial_number) + " \t" + result)
+            if result:
+                self.save_log(result)
 
     def stop_process(self):
         print('need to develop')
 
     def save_log(self, log_string):
         dt_now = datetime.datetime.now()
-        # string_now = dt_now.strftime("%H 시 %M 분 %S 초") # 한글 입력 안됨
-        string_now = dt_now.strftime("%H:%M:%S ")
-        log = string_now + "||\t" + log_string + "\n"
+        # string_now = dt_now.strftime("%H  %M  %S ")
+
+        log = log_string + "\n"
         self.log_to_show.append(log)
         self.text_display.insert(INSERT, log)
-        print(string_now + log_string)
+        print(log_string)
 
     def show_MessageBox(self, message):
         messagebox.showinfo('Info', message)
@@ -124,7 +124,7 @@ class Application(Frame):
 
 
 class Cell:
-
+    FAIL_SNR_CRITERIA = 30
     def __init__(self, widget):
         self.widget = widget
         self.serial_number = 0
@@ -166,7 +166,29 @@ class Cell:
             if accepted_satelite:
                 object_nmea.accepted_satelite = accepted_satelite
             object_nmea.set_data(lines)
-            return object_nmea.show_result()
+            result_dict = object_nmea.show_result()
+            return self.stringify_result(result_dict)
+
+    def stringify_result(self, result_dict):
+        # ex) CLBX-20010 GP 36 36 36 35, GL 33 36 PASS
+        result_string = "CLBX-{}".format(str(self.serial_number).zfill(5))
+        is_pass = True
+        for channel in result_dict:
+            added_string = " " + channel
+            for satelite_num in result_dict[channel]:
+                selected_satelite = result_dict[channel][satelite_num]
+                snr_average = round(selected_satelite['snr_sum'] / selected_satelite['line_num'], 2)
+                added_string += " " + str(snr_average)
+                if snr_average < self.FAIL_SNR_CRITERIA:
+                    is_pass = False
+            result_string += added_string
+
+        if is_pass:
+            result_string += " PASS"
+        else:
+            result_string += " FAIL"
+
+        return result_string
 
     def change_status(self, status="Waiting"):
         self.status = status
