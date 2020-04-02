@@ -47,8 +47,6 @@ class Application(Frame):
         self.save_text_display_button = Button(self, text="SAVE LOGS", command=self.save_text_display)
         self.save_text_display_button.grid(row=7, column=5)
 
-        # 셀 배치 6 X 6
-
         # 셀모양을 배치할 예정 6 X 6
         for i in range(6):
             for j in range(6):
@@ -97,8 +95,8 @@ class Application(Frame):
         # 각 셀을 순회하면서 process하라고 명령어 날리기
         for cell in self.cell_object_list:
             result = cell.process()
-            if result:
-                self.save_log(str(cell.serial_number) + " \t" + result)
+            # if result:
+            #     self.save_log(str(cell.serial_number) + " \t" + result)
 
     def stop_process(self):
         print('need to develop')
@@ -152,19 +150,21 @@ class Cell:
         self.update_widget()
 
     def process_GPGSV(self):
-        return self.process(['GPGSV'])
+        return self.process({'GPGSV': [1,3,22,50]})
+
 
     def process_GLGSV(self):
-        return self.process(['GLGSV'])
+        return self.process({'GLGSV': [71, 86]})
 
-    def process(self, accepted_messages=['GPGSV', 'GLGSV']):
+    def process(self, accepted_satelite=None):
         if not self.file_path:
             return None
         
         with open(self.file_path, mode='r', encoding='utf-8') as f:
             lines = f.readlines()
             object_nmea = NmeaGsvMessage()
-            object_nmea.accepted_messages = accepted_messages
+            if accepted_satelite:
+                object_nmea.accepted_satelite = accepted_satelite
             object_nmea.set_data(lines)
             return object_nmea.show_result()
 
