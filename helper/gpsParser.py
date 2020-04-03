@@ -123,8 +123,8 @@ class NmeaGsvMessage:
         self.parsed_satellite_data.append(self.satellite_buffer_list)
         self.satellite_buffer_list = []
 
-    def show_result(self):
-        self.prepare_result()
+    def get_result(self):
+        self.make_result()
         """
         {'GPGSV': {
         1: {'snr_sum': 56577, 'line_num': 1195}, 
@@ -138,7 +138,43 @@ class NmeaGsvMessage:
         print(self.result)
         return self.result
 
-    def prepare_result(self):
+    def make_result(self):
+
+        self.make_result_format()
+
+        for satellite_list in self.parsed_satellite_data:
+            for satellite_object in satellite_list:
+                self.add_satellite_to_result(satellite_object)
+
+    def make_result_format(self):
+        """
+        input self.accepted_satellite = {'GPGSV': [1,3,22,50],
+                                         'GLGSV': [71, 86]}
+        output self.result = {
+            'GPGSV': {
+                1: {
+                    "sum_snr": 0,
+                    "num_line":0,
+                },
+                3: {
+                    "sum_snr": 0,
+                    "num_line": 0,
+                }
+
+            },
+            'GLGSV': {
+                71: {
+                    "sum_snr": 0,
+                    "num_line":0,
+                },
+                86: {
+                    "sum_snr": 0,
+                    "num_line": 0,
+                },
+            },
+        }
+        :return: None
+        """
         self.result = {}
         for channel in self.accepted_satellite:
             self.result[channel] = {}
@@ -147,10 +183,6 @@ class NmeaGsvMessage:
                     "snr_sum": 0,
                     "line_num": 0,
                 }
-
-        for satellite_list in self.parsed_satellite_data:
-            for satellite_object in satellite_list:
-                self.add_satellite_to_result(satellite_object)
 
 
     def add_satellite_to_result(self, satellite_object):

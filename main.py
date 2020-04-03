@@ -171,7 +171,7 @@ class Cell:
             if accepted_satellite:
                 object_nmea.accepted_satellite = accepted_satellite
             object_nmea.set_data(lines)
-            self.result_dict = object_nmea.show_result()
+            self.result_dict = object_nmea.get_result()
 
     def get_stringify_result(self):
         # ex) CLBX-20010 GP 36 36 36 35, GL 33 36 PASS
