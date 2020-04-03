@@ -6,43 +6,59 @@ class NmeaGsvMessage:
     strings_to_contain = ['$', '*']
     delimiters = [",", "\*"]
 
-    accepted_satelite = {'GPGSV': [1,3,22,50],
+    accepted_satellite = {'GPGSV': [1,3,22,50],
                          'GLGSV': [71, 86]}
+
+    current_line = ""
+    satellite_buffer_list = []
+    parsed_satellite_data = []
     result = {
         'GPGSV': {
-            "sum_snr": 0,
-            "num_line":0,
+            1: {
+                "sum_snr": 0,
+                "num_line":0,
+            },
+            3: {
+                "sum_snr": 0,
+                "num_line": 0,
+            }
+
         },
         'GLGSV': {
-            "sum_snr": 0,
-            "num_line":0,
+            71: {
+                "sum_snr": 0,
+                "num_line":0,
+            },
+            86: {
+                "sum_snr": 0,
+                "num_line": 0,
+            },
         },
     }
 
     def __init__(self, lines=None):
-        self.current_line = ""
-        self.satelite_buffer_list = []
-        self.parsed_satelite_data = []
-
         if lines:
             self.set_data(lines)
 
     def set_data(self, lines):
         self.current_line = ""
-        self.satelite_buffer_list = []
-        self.parsed_satelite_data = []
+        self.satellite_buffer_list = []
+        self.parsed_satellite_data = []
+
+        self.analyze_lines(lines)
+
+    def analyze_lines(self, lines):
         for line in lines:
             self.analyze_line(line)
 
-        if self.satelite_buffer_list:
+        # 버퍼 남은거 정리
+        if self.satellite_buffer_list:
             self.flush_out_buffer()
 
-
     def analyze_line(self, line):
-        self.current_line = line
-        self.filter_line()
+        self.current_line = self.filter_line(line)
 
-        if self.is_valid_line():
+        if self.is_valid_line(self.current_line):
             if self.should_flush_before():
                 self.flush_out_buffer()
 
@@ -51,19 +67,17 @@ class NmeaGsvMessage:
             if self.should_flush_after():
                 self.flush_out_buffer()
 
-    def filter_line(self):
-        line_to_filter = self.current_line
+    def filter_line(self, line_to_filter):
 
         for string_to_remove in self.strings_to_remove:
             line_to_filter.replace(string_to_remove, '')
 
-        self.current_line = line_to_filter
+        return line_to_filter
 
-    def is_valid_line(self):
-        line_to_check_valid = self.current_line
+    def is_valid_line(self, line_to_check_valid):
 
         is_message_accepted = False
-        for accepted_channel in self.accepted_satelite:
+        for accepted_channel in self.accepted_satellite:
             if line_to_check_valid.__contains__(accepted_channel):
                 is_message_accepted = True;
 
@@ -82,17 +96,17 @@ class NmeaGsvMessage:
         for i in range(7, len(splited_line)-1, 4):
             try:
                 channel = splited_line[0].replace('$','')
-                satelite_num = int(splited_line[i-3])
+                satellite_num = int(splited_line[i-3])
                 snr_num = int(splited_line[i])
-                if satelite_num in self.accepted_satelite[channel]:
-                    satelite_buffer = Satelite(channel, satelite_num, snr_num)
-                    self.satelite_buffer_list.append(satelite_buffer)
+                if satellite_num in self.accepted_satellite[channel]:
+                    satellite_buffer = Satellite(channel, satellite_num, snr_num)
+                    self.satellite_buffer_list.append(satellite_buffer)
             except:
                 continue
 
     def should_flush_before(self):
         splited_line = re.split("|".join(self.delimiters), self.current_line)
-        if self.satelite_buffer_list and splited_line[2] == 1:
+        if self.satellite_buffer_list and splited_line[2] == 1:
             return True
         return False
 
@@ -106,8 +120,8 @@ class NmeaGsvMessage:
 
     def flush_out_buffer(self):
 
-        self.parsed_satelite_data.append(self.satelite_buffer_list)
-        self.satelite_buffer_list = []
+        self.parsed_satellite_data.append(self.satellite_buffer_list)
+        self.satellite_buffer_list = []
 
     def show_result(self):
         self.prepare_result()
@@ -126,42 +140,40 @@ class NmeaGsvMessage:
 
     def prepare_result(self):
         self.result = {}
-        for channel in self.accepted_satelite:
+        for channel in self.accepted_satellite:
             self.result[channel] = {}
-            for satelite_num in self.accepted_satelite[channel]:
-                self.result[channel][satelite_num] = {
+            for satellite_num in self.accepted_satellite[channel]:
+                self.result[channel][satellite_num] = {
                     "snr_sum": 0,
                     "line_num": 0,
                 }
 
-        for satelite_list in self.parsed_satelite_data:
-            for satelite_object in satelite_list:
-                self.add_satelite_to_result(satelite_object)
+        for satellite_list in self.parsed_satellite_data:
+            for satellite_object in satellite_list:
+                self.add_satellite_to_result(satellite_object)
 
 
-    def add_satelite_to_result(self, satelite_object):
+    def add_satellite_to_result(self, satellite_object):
 
-        channel = satelite_object.channel
-        satelite_num = satelite_object.satelite_num
-        snr_num = satelite_object.snr_num
+        channel = satellite_object.channel
+        satellite_num = satellite_object.satellite_num
+        snr_num = satellite_object.snr_num
 
-        existing_result = self.result[channel][satelite_num]
+        existing_result = self.result[channel][satellite_num]
 
         existing_result['snr_sum'] += snr_num
         existing_result['line_num'] += 1
 
 
-class Satelite:
+class Satellite:
 
-    def __init__(self, channel, satelite_num, snr_num):
+    def __init__(self, channel, satellite_num, snr_num):
         self.channel = channel
-        self.satelite_num = satelite_num
+        self.satellite_num = satellite_num
         self.snr_num = snr_num
 
     def __eq__(self, other_number):
-        return self.satelite_num == other_number
-
-
+        return self.satellite_num == other_number
 
 if __name__ == '__main__':
     pass

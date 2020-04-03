@@ -94,9 +94,11 @@ class Application(Frame):
 
         # 각 셀을 순회하면서 process하라고 명령어 날리기
         for cell in self.cell_object_list:
-            result = cell.process()
-            if result:
-                self.save_log(result)
+            if cell.serial_number:
+                cell.process()
+                string_result = cell.get_stringify_result()
+                self.save_log(string_result)
+
 
     def stop_process(self):
         print('need to develop')
@@ -124,17 +126,21 @@ class Application(Frame):
 
 
 class Cell:
-    FAIL_SNR_CRITERIA = 30
+
+
     def __init__(self, widget):
         self.widget = widget
         self.serial_number = 0
         self.file_path = ""
         self.status = "WAITING"
+        self.result_dict = None
+        self.snr_criteria = 30
 
     def initialize(self):
         self.serial_number = 0
         self.file_path = ""
         self.status = "WAITING"
+        self.result_dict = None
         self.widget["bg"] = 'white'
 
         self.update_widget()
@@ -152,34 +158,32 @@ class Cell:
     def process_GPGSV(self):
         return self.process({'GPGSV': [1,3,22,50]})
 
-
     def process_GLGSV(self):
         return self.process({'GLGSV': [71, 86]})
 
-    def process(self, accepted_satelite=None):
+    def process(self, accepted_satellite=None):
         if not self.file_path:
             return None
         
         with open(self.file_path, mode='r', encoding='utf-8') as f:
             lines = f.readlines()
             object_nmea = NmeaGsvMessage()
-            if accepted_satelite:
-                object_nmea.accepted_satelite = accepted_satelite
+            if accepted_satellite:
+                object_nmea.accepted_satellite = accepted_satellite
             object_nmea.set_data(lines)
-            result_dict = object_nmea.show_result()
-            return self.stringify_result(result_dict)
+            self.result_dict = object_nmea.show_result()
 
-    def stringify_result(self, result_dict):
+    def get_stringify_result(self):
         # ex) CLBX-20010 GP 36 36 36 35, GL 33 36 PASS
         result_string = "CLBX-{}".format(str(self.serial_number).zfill(5))
         is_pass = True
-        for channel in result_dict:
+        for channel in self.result_dict:
             added_string = " " + channel
-            for satelite_num in result_dict[channel]:
-                selected_satelite = result_dict[channel][satelite_num]
-                snr_average = round(selected_satelite['snr_sum'] / selected_satelite['line_num'], 2)
+            for satellite_num in self.result_dict[channel]:
+                selected_satellite = self.result_dict[channel][satellite_num]
+                snr_average = round(selected_satellite['snr_sum'] / selected_satellite['line_num'], 2)
                 added_string += " " + str(snr_average)
-                if snr_average < self.FAIL_SNR_CRITERIA:
+                if snr_average < self.snr_criteria:
                     is_pass = False
             result_string += added_string
 
@@ -189,6 +193,21 @@ class Cell:
             result_string += " FAIL"
 
         return result_string
+
+    def get_table_parsed_result(self):
+        #
+        # [serial_number, channel, satellite_num, snr_average]
+        result_table = []
+        self.serial_number
+
+        for channel in self.result_dict:
+            for satellite_num in self.result_dict[channel]:
+                selected_satellite = self.result_dict[channel][satellite_num]
+                snr_average = round(selected_satellite['snr_sum'] / selected_satellite['line_num'], 2)
+                row = [self.serial_number, channel, satellite_num, snr_average]
+                result_table.append(row)
+
+        return result_table
 
     def change_status(self, status="Waiting"):
         self.status = status
