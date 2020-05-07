@@ -5,11 +5,6 @@ import datetime
 from tkinter import scrolledtext, messagebox, filedialog
 from widgetModel.cell import Cell
 
-"""
-결과물은 Serial No, 지정된 GPS 채널(4개), GLONASS 채널(2개)의 1분간의 SNR 평균값, 테스트결과(PASS, FAIL)이 포함되었으면 합니다.
-ex) CLBX-20010 GP 36 36 36 35, GL 33 36 PASS
-
-"""
 
 class Application(Frame):
     log_to_show = []
@@ -20,7 +15,8 @@ class Application(Frame):
         self.master = master
         self.pack()
 
-        self.data_directory = "./data"
+        self.data_directory = '/data'
+        self.folder_selected = os.path.join(os.path.expanduser('~'), 'Desktop')
 
         self.create_widgets()
 
@@ -37,6 +33,21 @@ class Application(Frame):
         self.stop.image = img
         self.stop.grid(row=0, column=1, rowspan=2)
 
+        # 셀이미지
+        img = PhotoImage(file="image/Cell_Empty.png")
+        self.cell_image_1 = Button(self, image=img, bg='white')
+        self.cell_image_1.image = img
+        self.cell_image_1["border"] = "0"
+        self.cell_image_1.grid(row=3, column=0)
+
+        img = PhotoImage(file="image/Cell_Complete.png")
+        self.cell_image_2 = Button(self, image=img, bg='white')
+        self.cell_image_2.image = img
+        self.cell_image_2["border"] = "0"
+        self.cell_image_2.grid(row=4, column=0)
+
+
+
         # 로그관련
         self.text_display = scrolledtext.ScrolledText(self, width=120, height=10)
         self.text_display.grid(row=8, column=4, columnspan=10)
@@ -47,10 +58,19 @@ class Application(Frame):
         self.save_text_display_button = Button(self, text="SAVE LOGS", command=self.save_text_display)
         self.save_text_display_button.grid(row=7, column=5)
 
+        self.save_text_display_button = Button(self, text="OPEN OHCHOACH", command=self.open_url)
+        self.save_text_display_button.grid(row=7, column=6)
+
+        self.save_text_display_button = Button(self, text="SELECT DIRECTORY", command=self.choose_directory)
+        self.save_text_display_button.grid(row=7, column=7)
+
+        self.save_text_display_button = Button(self, text="OPEN DIRECTORY", command=self.open_directory)
+        self.save_text_display_button.grid(row=7, column=8)
+
         # 셀모양을 배치할 예정 6 X 6
         for i in range(6):
             for j in range(6):
-                tmp_widget = Button(self, text="Waiting", fg="black")
+                tmp_widget = Button(self, text="Waiting", fg="black", height=3, width=15, bg='white')
                 row = 0+i
                 column = 4+j
                 tmp_widget.grid(row=row, column=column)
@@ -66,7 +86,7 @@ class Application(Frame):
         pass
 
     def process_data(self):
-        
+
         # 각 셀 돌면서 초기화
         for cell in self.cell_object_list:
             cell.initialize()
@@ -90,7 +110,6 @@ class Application(Frame):
                 cell.process()
                 string_result = cell.get_stringify_result()
                 self.save_log(string_result)
-
 
     def stop_process(self):
         print('need to develop')
@@ -116,10 +135,26 @@ class Application(Frame):
     def quit(self):
         self.master.destroy()
 
+    def open_url(self):
+        import webbrowser
+
+        webbrowser.open('http://ohcoach.com')
+
+    def choose_directory(self):
+
+        choosen_dir = filedialog.askdirectory()
+        if choosen_dir:
+            self.folder_selected = choosen_dir
+
+        print('folder chosen', self.folder_selected)
+
+    def open_directory(self):
+        os.startfile(self.folder_selected)
 
 if __name__ == '__main__':
     window = Tk()
     window.title("Fitogether Quaility Control System")
     window.geometry("1280x860+100+100")
     app = Application(master=window)
+    # window.configure(bg="black")
     app.mainloop()
